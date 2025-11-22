@@ -3,6 +3,8 @@
 
 import java.nio.file.Paths
 import org.apache.tools.ant.taskdefs.condition.Os
+import javax.inject.Inject // <-- ADD THIS IMPORT
+import org.gradle.process.ExecOperations // <-- ADD THIS IMPORT
 
 CargoKitPlugin.file = buildscript.sourceFile
 
@@ -42,6 +44,12 @@ abstract class CargoKitBuildTask extends DefaultTask {
     @Input
     List<String> targetPlatforms
 
+    // --- ADD THIS BLOCK ---
+    // Inject the ExecOperations service
+    @Inject
+    abstract ExecOperations getExecOperations();
+    // ----------------------
+
     @TaskAction
     def build() {
         if (project.cargokit.manifestDir == null) {
@@ -60,12 +68,18 @@ abstract class CargoKitBuildTask extends DefaultTask {
         def rootProjectDir = project.rootProject.projectDir
 
         if (!Os.isFamily(Os.FAMILY_WINDOWS)) {
-            project.exec {
+            // --- CHANGE THIS ---
+            // From: project.exec {
+            getExecOperations().exec {
+            // -------------------
                 commandLine 'chmod', '+x', path
             }
         }
 
-        project.exec {
+        // --- CHANGE THIS ---
+        // From: project.exec {
+        getExecOperations().exec {
+        // -------------------
             executable path
             args "build-gradle"
             environment "CARGOKIT_ROOT_PROJECT_DIR", rootProjectDir
@@ -92,7 +106,7 @@ class CargoKitPlugin implements Plugin<Project> {
         _findFlutterPlugin(rootProject.childProjects)
     }
 
-   private Plugin _findFlutterPlugin(Map projects) {
+    private Plugin _findFlutterPlugin(Map projects) {
         for (project in projects) {
             for (plugin in project.value.getPlugins()) {
                 if (plugin.class.name == "com.flutter.gradle.FlutterPlugin") {
